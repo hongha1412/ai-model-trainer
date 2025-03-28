@@ -16,6 +16,10 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 from api.openai_compatible import api_bp
 app.register_blueprint(api_bp, url_prefix='/api/v1')
 
+# Register OpenAPI documentation blueprint
+from api.openapi_spec import openapi_bp
+app.register_blueprint(openapi_bp, url_prefix='/api/docs')
+
 # Import routes after app is created to avoid circular imports
 from routes import *
 

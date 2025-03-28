@@ -32,7 +32,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="https://github.com/openai/openai-python" target="_blank">
+                            <a class="nav-link {% if request.path == '/api/docs/docs' %}active{% endif %}" href="{{ url_for('openapi.docs') }}">
                                 <i data-feather="book"></i>
                                 API Docs
                             </a>
