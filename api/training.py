@@ -3,7 +3,9 @@ API endpoints for model training
 """
 import os
 import json
+import time
 import logging
+import threading
 from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
 from typing import Dict, List, Any, Optional, Union
@@ -528,18 +530,81 @@ def train_model():
                     "validation_errors": validation_errors
                 }), 400
             
-            # Train model
-            if learning_type == "supervised":
-                result = trainer.train(dataset_handler, input_field, output_field)
-            else:
-                result = trainer.train(dataset_handler, input_field)
+            # Create a unique job_id for the training process
+            job_id = f"job_{int(time.time())}_{model_id}"
             
-            if result.get("status") == "error":
-                return jsonify({
-                    "error": result.get("error", "Unknown error during training")
-                }), 500
+            # Register the training job with the monitoring system
+            from api.monitor import register_training_job
+            register_training_job(
+                job_id=job_id,
+                model_id=model_id,
+                dataset=dataset_filename,
+                config=training_config
+            )
             
-            return jsonify(result)
+            # Start the training in a background thread
+            def train_in_background():
+                try:
+                    from api.monitor import update_training_status, add_log_message, check_stop_requested
+                    
+                    # Update status to training
+                    update_training_status(job_id, status="training", progress=0)
+                    
+                    # Set the job_id in the trainer so it can report progress
+                    trainer.job_id = job_id
+                    
+                    # Train model based on learning type
+                    if learning_type == "supervised":
+                        result = trainer.train(dataset_handler, input_field, output_field)
+                    else:
+                        result = trainer.train(dataset_handler, input_field)
+                    
+                    # Update status based on result
+                    if result.get("status") == "error":
+                        update_training_status(
+                            job_id, 
+                            status="error", 
+                            error=result.get("error", "Unknown error during training")
+                        )
+                    elif result.get("status") == "stopped":
+                        # Training was stopped by user
+                        update_training_status(
+                            job_id, 
+                            status="stopped", 
+                            progress=result.get("progress", 0)
+                        )
+                        add_log_message(job_id, result.get("message", "Training stopped by user request"))
+                    else:
+                        # Training completed successfully
+                        update_training_status(
+                            job_id, 
+                            status="completed", 
+                            progress=100
+                        )
+                        add_log_message(job_id, "Training completed successfully!")
+                        
+                except Exception as e:
+                    # Handle any other exceptions
+                    from api.monitor import update_training_status
+                    logger.error(f"Error in training thread: {str(e)}")
+                    update_training_status(
+                        job_id, 
+                        status="error", 
+                        error=str(e)
+                    )
+            
+            # Start the background thread for training
+            training_thread = threading.Thread(target=train_in_background)
+            training_thread.daemon = True
+            training_thread.start()
+            
+            # Return success with job_id for monitoring
+            return jsonify({
+                "status": "success",
+                "message": "Training started successfully",
+                "job_id": job_id
+            })
+            
         except ImportError as e:
             logger.error(f"Missing dependencies for training: {str(e)}")
             return jsonify({

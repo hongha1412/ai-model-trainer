@@ -73,6 +73,11 @@ export interface TrainingState {
     progress: number
     log: string[]
     error: string | null
+    jobId?: string
+    currentEpoch?: number
+    currentStep?: number
+    metrics?: Record<string, number>
+    status?: string
   }
   loading: boolean
   error: string | null
@@ -96,7 +101,12 @@ export const useTrainingStore = defineStore('training', {
       isTraining: false,
       progress: 0,
       log: [],
-      error: null
+      error: null,
+      jobId: undefined,
+      currentEpoch: undefined,
+      currentStep: undefined,
+      metrics: undefined,
+      status: undefined
     },
     loading: false,
     error: null
@@ -328,18 +338,13 @@ export const useTrainingStore = defineStore('training', {
       try {
         const response = await axios.post('/api/training/train', params)
         
-        // Simulate updating training logs every second
-        // In a real application, you would use WebSockets or Server-Sent Events
-        const trainingInterval = setInterval(() => {
-          this.trainingStatus.progress += 5
-          this.trainingStatus.log.push(`Training progress: ${this.trainingStatus.progress}%`)
+        // Store the job ID from the response
+        if (response.data && response.data.job_id) {
+          this.trainingStatus.jobId = response.data.job_id
           
-          if (this.trainingStatus.progress >= 100) {
-            clearInterval(trainingInterval)
-            this.trainingStatus.isTraining = false
-            this.trainingStatus.log.push('Training completed successfully!')
-          }
-        }, 1000)
+          // Immediately fetch the initial status
+          this.getTrainingStatus(response.data.job_id)
+        }
         
         return { success: true, message: response.data.message || 'Training started successfully' }
       } catch (error: any) {
@@ -368,7 +373,58 @@ export const useTrainingStore = defineStore('training', {
         isTraining: false,
         progress: 0,
         log: [],
-        error: null
+        error: null,
+        jobId: undefined,
+        currentEpoch: undefined,
+        currentStep: undefined,
+        metrics: undefined,
+        status: undefined
+      }
+    },
+    
+    async getTrainingStatus(jobId: string) {
+      try {
+        const response = await axios.get(`/api/training/jobs/${jobId}`)
+        
+        if (response.data) {
+          // Update the training status with the response data
+          this.trainingStatus = {
+            ...this.trainingStatus,
+            ...response.data,
+            isTraining: ['training', 'evaluating'].includes(response.data.status || ''),
+            jobId
+          }
+          
+          // If the training is complete, stop polling
+          if (['completed', 'error', 'stopped'].includes(response.data.status || '')) {
+            this.trainingStatus.isTraining = false
+          }
+        }
+        
+        return { success: true, data: response.data }
+      } catch (error: any) {
+        console.error('Error getting training status:', error)
+        return { 
+          success: false, 
+          message: error.response?.data?.error || error.message || 'Failed to get training status' 
+        }
+      }
+    },
+    
+    async stopTrainingJob(jobId: string) {
+      try {
+        const response = await axios.post(`/api/monitor/jobs/${jobId}/stop`)
+        
+        // Update the status to indicate the stop was requested
+        this.trainingStatus.status = 'stopping'
+        
+        return { success: true, message: response.data?.message || 'Stop request sent successfully' }
+      } catch (error: any) {
+        console.error('Error stopping training job:', error)
+        return { 
+          success: false, 
+          message: error.response?.data?.error || error.message || 'Failed to stop training job' 
+        }
       }
     }
   }

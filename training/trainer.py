@@ -68,6 +68,7 @@ class BaseTrainer:
         self.model_path = model_config.get("model_path", "")
         self.training_config = {}
         self.learning_type = "supervised"  # Default learning type
+        self.job_id = None  # Will be set by the training process
         
         # Initialize logging
         logging.basicConfig(
@@ -302,18 +303,98 @@ class SupervisedTrainer(BaseTrainer):
                 learning_rate=self.training_config.get("learning_rate", 2e-5),
             )
             
-            # Create trainer
+            # Create a custom callback for monitoring progress and checking for stop requests
+            class MonitorCallback(transformers.TrainerCallback):
+                def __init__(self, trainer_instance):
+                    self.trainer_instance = trainer_instance
+                
+                def on_epoch_begin(self, args, state, control, **kwargs):
+                    # Update current epoch
+                    if hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import update_training_status, add_log_message
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            current_epoch=state.epoch,
+                            progress=min(100, int((state.epoch / state.max_steps) * 100))
+                        )
+                        add_log_message(self.trainer_instance.job_id, f"Starting epoch {state.epoch}")
+                
+                def on_step_end(self, args, state, control, **kwargs):
+                    # Check for stop requests
+                    if hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import check_stop_requested, update_training_status
+                        
+                        # Update progress
+                        progress = min(100, int((state.global_step / state.max_steps) * 100))
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            current_step=state.global_step,
+                            progress=progress
+                        )
+                        
+                        # Check if stop was requested
+                        if check_stop_requested(self.trainer_instance.job_id):
+                            update_training_status(
+                                self.trainer_instance.job_id,
+                                status="stopped",
+                                current_step=state.global_step
+                            )
+                            control.should_training_stop = True
+                
+                def on_log(self, args, state, control, logs=None, **kwargs):
+                    # Update metrics
+                    if logs and hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import update_training_status
+                        metrics = {k: v for k, v in logs.items() if isinstance(v, (int, float))}
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            metrics=metrics
+                        )
+            
+            # Create trainer with callback
             trainer = Trainer(
                 model=self.model,
                 args=training_args,
                 train_dataset=prepared_dataset["train_dataset"],
                 eval_dataset=prepared_dataset["eval_dataset"],
+                callbacks=[MonitorCallback(self)]
             )
+            
+            # Report progress through monitoring system if job_id is set
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import update_training_status, add_log_message
+                update_training_status(
+                    self.job_id,
+                    status="training",
+                    progress=5,
+                    current_epoch=0
+                )
+                add_log_message(self.job_id, "Starting training...")
             
             # Train model
             start_time = time.time()
             train_result = trainer.train()
             training_time = time.time() - start_time
+            
+            # Check if training was stopped
+            was_stopped = False
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import get_job_status
+                job_status = get_job_status(self.job_id)
+                was_stopped = job_status and job_status.get("status") == "stopped"
+            
+            if was_stopped:
+                # If training was stopped by user, don't continue with evaluation
+                if hasattr(self, 'job_id') and self.job_id:
+                    from api.monitor import add_log_message
+                    add_log_message(self.job_id, "Training was stopped by user request")
+                    
+                return {
+                    "status": "stopped",
+                    "model_id": self.model_id,
+                    "training_time": training_time,
+                    "message": "Training was stopped by user request"
+                }
             
             # Evaluate model
             eval_result = trainer.evaluate()
@@ -323,6 +404,20 @@ class SupervisedTrainer(BaseTrainer):
             
             # Register model
             register_model(self.model_id, self.model, self.model_type)
+            
+            # Update final status if we have a job_id
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import update_training_status, add_log_message
+                update_training_status(
+                    self.job_id,
+                    status="completed",
+                    progress=100,
+                    metrics={
+                        "train_loss": train_result.metrics.get("train_loss"),
+                        "eval_loss": eval_result.get("eval_loss")
+                    }
+                )
+                add_log_message(self.job_id, f"Training completed in {training_time:.2f} seconds")
             
             return {
                 "status": "success",
@@ -511,6 +606,54 @@ class UnsupervisedTrainer(BaseTrainer):
                 learning_rate=self.training_config.get("learning_rate", 1e-4),
             )
             
+            # Create a custom callback for monitoring progress and checking for stop requests
+            class MonitorCallback(transformers.TrainerCallback):
+                def __init__(self, trainer_instance):
+                    self.trainer_instance = trainer_instance
+                
+                def on_epoch_begin(self, args, state, control, **kwargs):
+                    # Update current epoch
+                    if hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import update_training_status, add_log_message
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            current_epoch=state.epoch,
+                            progress=min(100, int((state.epoch / state.max_steps) * 100))
+                        )
+                        add_log_message(self.trainer_instance.job_id, f"Starting epoch {state.epoch}")
+                
+                def on_step_end(self, args, state, control, **kwargs):
+                    # Check for stop requests
+                    if hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import check_stop_requested, update_training_status
+                        
+                        # Update progress
+                        progress = min(100, int((state.global_step / state.max_steps) * 100))
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            current_step=state.global_step,
+                            progress=progress
+                        )
+                        
+                        # Check if stop was requested
+                        if check_stop_requested(self.trainer_instance.job_id):
+                            update_training_status(
+                                self.trainer_instance.job_id,
+                                status="stopped",
+                                current_step=state.global_step
+                            )
+                            control.should_training_stop = True
+                
+                def on_log(self, args, state, control, logs=None, **kwargs):
+                    # Update metrics
+                    if logs and hasattr(self.trainer_instance, 'job_id') and self.trainer_instance.job_id:
+                        from api.monitor import update_training_status
+                        metrics = {k: v for k, v in logs.items() if isinstance(v, (int, float))}
+                        update_training_status(
+                            self.trainer_instance.job_id,
+                            metrics=metrics
+                        )
+            
             # DataCollator for language modeling
             from transformers import DataCollatorForLanguageModeling
             data_collator = DataCollatorForLanguageModeling(
@@ -519,19 +662,51 @@ class UnsupervisedTrainer(BaseTrainer):
                 mlm_probability=0.15
             )
             
-            # Create trainer
+            # Create trainer with callback
             trainer = Trainer(
                 model=self.model,
                 args=training_args,
                 data_collator=data_collator,
                 train_dataset=prepared_dataset["train_dataset"],
                 eval_dataset=prepared_dataset["eval_dataset"],
+                callbacks=[MonitorCallback(self)]
             )
+            
+            # Report progress through monitoring system if job_id is set
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import update_training_status, add_log_message
+                update_training_status(
+                    self.job_id,
+                    status="training",
+                    progress=5,
+                    current_epoch=0
+                )
+                add_log_message(self.job_id, "Starting training...")
             
             # Train model
             start_time = time.time()
             train_result = trainer.train()
             training_time = time.time() - start_time
+            
+            # Check if training was stopped
+            was_stopped = False
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import get_job_status
+                job_status = get_job_status(self.job_id)
+                was_stopped = job_status and job_status.get("status") == "stopped"
+            
+            if was_stopped:
+                # If training was stopped by user, don't continue with evaluation
+                if hasattr(self, 'job_id') and self.job_id:
+                    from api.monitor import add_log_message
+                    add_log_message(self.job_id, "Training was stopped by user request")
+                    
+                return {
+                    "status": "stopped",
+                    "model_id": self.model_id,
+                    "training_time": training_time,
+                    "message": "Training was stopped by user request"
+                }
             
             # Evaluate model
             eval_result = trainer.evaluate()
@@ -541,6 +716,20 @@ class UnsupervisedTrainer(BaseTrainer):
             
             # Register model
             register_model(self.model_id, self.model, self.model_type)
+            
+            # Update final status if we have a job_id
+            if hasattr(self, 'job_id') and self.job_id:
+                from api.monitor import update_training_status, add_log_message
+                update_training_status(
+                    self.job_id,
+                    status="completed",
+                    progress=100,
+                    metrics={
+                        "train_loss": train_result.metrics.get("train_loss"),
+                        "eval_loss": eval_result.get("eval_loss")
+                    }
+                )
+                add_log_message(self.job_id, f"Training completed in {training_time:.2f} seconds")
             
             return {
                 "status": "success",

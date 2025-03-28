@@ -132,7 +132,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, onMounted, nextTick } from 'vue'
+import { defineComponent, ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useTrainingStore } from '../../store/training'
 import type { DatasetInfo, ModelInfo, TrainingConfig } from '../../store/training'
 
@@ -183,6 +183,22 @@ export default defineComponent({
     // Computed properties
     const statusText = computed(() => {
       if (error.value) return 'Error'
+      
+      const status = trainingStore.trainingStatus.status
+      if (status) {
+        // Map API status to user-friendly labels
+        const statusMap: Record<string, string> = {
+          'training': 'Training',
+          'evaluating': 'Evaluating',
+          'completed': 'Complete',
+          'error': 'Error',
+          'stopping': 'Stopping...',
+          'stopped': 'Stopped'
+        }
+        return statusMap[status] || status
+      }
+      
+      // Fallbacks if status is not provided
       if (isTraining.value) return 'Training'
       if (isComplete.value) return 'Complete'
       return 'Ready'
@@ -222,11 +238,11 @@ export default defineComponent({
       addLog('Starting training...')
     }
     
-    const stopTraining = () => {
-      // In a real application, we would call an API to stop training
-      // For this demo, we'll just set the status to complete
-      trainingStore.trainingStatus.isTraining = false
-      addLog('Training stopped by user')
+    const stopTraining = async () => {
+      if (trainingStore.trainingStatus.jobId) {
+        await trainingStore.stopTrainingJob(trainingStore.trainingStatus.jobId)
+        addLog('Training stop requested')
+      }
     }
     
     const onTrainingComplete = () => {
@@ -307,14 +323,60 @@ export default defineComponent({
         }
       }
       
-      // Check if training is complete
-      if (status.progress >= 100 && !status.isTraining) {
+      // Check if metrics are available from API response
+      if (status.metrics) {
+        for (const [name, value] of Object.entries(status.metrics)) {
+          // Convert metric names to title case
+          const formattedName = name
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+          
+          updateMetric(formattedName, value)
+        }
+      }
+      
+      // Update training step and epoch information
+      if (status.currentEpoch !== undefined && status.currentStep !== undefined) {
+        addLog(`Epoch ${status.currentEpoch}, Step ${status.currentStep}`)
+      }
+      
+      // Update status text based on status field
+      if (status.status) {
+        const statusMap: Record<string, string> = {
+          'training': 'Training in progress',
+          'evaluating': 'Evaluating model',
+          'completed': 'Training completed successfully',
+          'error': 'Training failed with errors',
+          'stopping': 'Stopping training...',
+          'stopped': 'Training stopped by user'
+        }
+        
+        const statusMessage = statusMap[status.status] || `Status: ${status.status}`
+        
+        // Don't add duplicates
+        const lastLog = logs.value[logs.value.length - 1]
+        if (!lastLog || lastLog.message !== statusMessage) {
+          addLog(statusMessage)
+        }
+      }
+      
+      // Check if training is complete based on status field
+      if (['completed', 'error', 'stopped'].includes(status.status || '') && !isComplete.value) {
+        isComplete.value = true
+        if (status.status === 'completed') {
+          addLog('Training completed successfully!')
+        }
+      }
+      
+      // Check if training is complete based on progress (fallback)
+      if (status.progress >= 100 && !status.isTraining && !isComplete.value) {
         isComplete.value = true
         addLog('Training completed successfully!')
       }
       
       // Check for errors
-      if (status.error) {
+      if (status.error && status.error !== error.value) {
         addLog(`Error: ${status.error}`)
       }
     }, { deep: true })
@@ -328,14 +390,42 @@ export default defineComponent({
       }
     }
     
-    // Initialize with synthetic training data for demonstration
+    // Set up polling for training status
+    const pollingInterval = ref<number | null>(null)
+    
+    const startStatusPolling = () => {
+      // Poll every 2 seconds
+      pollingInterval.value = window.setInterval(() => {
+        if (trainingStore.trainingStatus.jobId) {
+          trainingStore.getTrainingStatus(trainingStore.trainingStatus.jobId)
+        }
+      }, 2000)
+    }
+    
+    const stopStatusPolling = () => {
+      if (pollingInterval.value) {
+        clearInterval(pollingInterval.value)
+        pollingInterval.value = null
+      }
+    }
+    
     onMounted(() => {
-      // Add example metrics
-      metrics.value = [
-        { name: 'Loss', value: 0.0 },
-        { name: 'Accuracy', value: 0.0 },
-        { name: 'F1 Score', value: 0.0 }
-      ]
+      // Initialize empty metrics
+      metrics.value = []
+    })
+    
+    // Start polling when training starts, stop when it completes
+    watch(() => trainingStore.trainingStatus.isTraining, (isTraining) => {
+      if (isTraining) {
+        startStatusPolling()
+      } else {
+        stopStatusPolling()
+      }
+    })
+    
+    // Clean up on component unmount
+    onUnmounted(() => {
+      stopStatusPolling()
     })
     
     return {
