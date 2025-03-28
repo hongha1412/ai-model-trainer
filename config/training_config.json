@@ -1,5 +1,14 @@
 {
-  "learning_types": {
+  "learning_types": [
+    "supervised",
+    "unsupervised",
+    "reinforcement",
+    "semi_supervised",
+    "self_supervised",
+    "online",
+    "federated"
+  ],
+  "default_configs": {
     "supervised": {
       "batch_size": 8,
       "learning_rate": 2e-5,
@@ -64,15 +73,6 @@
       "aggregation": "fedavg"
     }
   },
-  "current_config": {
-    "learning_type": "supervised",
-    "batch_size": 8,
-    "learning_rate": 2e-5,
-    "num_train_epochs": 3,
-    "weight_decay": 0.01,
-    "warmup_steps": 500,
-    "max_seq_length": 128,
-    "evaluation_strategy": "epoch",
-    "save_steps": 10000
-  }
+  "supported_model_formats": ["safetensors", "pytorch", "keras", "onnx"],
+  "supported_dataset_formats": ["csv", "json", "txt"]
 }

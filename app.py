@@ -31,7 +31,15 @@ app.register_blueprint(api_bp, url_prefix='/api/v1')
 
 # Register OpenAPI documentation blueprint
 from api.openapi_spec import openapi_bp
-app.register_blueprint(openapi_bp, url_prefix='/api/openapi')
+app.register_blueprint(openapi_bp)
+
+# Register monitor API blueprint
+try:
+    from api.monitor import monitor_bp
+    app.register_blueprint(monitor_bp)
+    logger.info("Monitor API blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"Monitor API could not be registered: {str(e)}")
 
 # Try to load the training API blueprint
 try:
@@ -65,8 +73,9 @@ ModelConfig.load_default_config()
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_vue_app(path):
+    # Skip API and static routes - but return a 404 instead of None
     if path and (path.startswith('api/') or path.startswith('static/')):
-        return None  # Let Flask handle API and static routes
+        return "Not Found", 404
     try:
         # For production, serve the built Vue app
         if os.path.exists(os.path.join('static', 'vue')):
@@ -85,7 +94,7 @@ def serve_vue_app(path):
 ./build_frontend.sh
                     </pre>
                     <p>API endpoints are available at <a href="/api/models">/api/models</a></p>
-                    <p>OpenAPI documentation is available at <a href="/api/openapi">/api/openapi</a></p>
+                    <p>OpenAPI documentation is available at <a href="/openapi.json">/openapi.json</a></p>
                 </body>
             </html>
             """
