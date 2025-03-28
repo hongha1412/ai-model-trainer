@@ -7,3 +7,32 @@ channel = "stable-24_05"
 [[ports]]
 localPort = 3000
 externalPort = 80
+exposeLocalhost = true
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Start"
+mode = "parallel"
+author = 40729527
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm run serve"
+
+[[workflows.workflow]]
+name = "Run server"
+mode = "sequential"
+author = 40729527
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"

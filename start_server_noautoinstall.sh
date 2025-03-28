@@ -8,4 +8,4 @@ export FLASK_ENV=development
 export SESSION_SECRET=dev-secret-key
 
 # Run the server
-python main.py
+./start_server.sh

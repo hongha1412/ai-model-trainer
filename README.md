@@ -1,19 +1,23 @@
 # AI Model Server
 
-A Python Flask server providing OpenAI-compatible API endpoints for custom T5 model inference with a modern web interface for model management.
+A Python Flask server providing OpenAI-compatible API endpoints for custom machine learning model inference, designed to support advanced AI workflows with a modern web interface for model management, configuration, and training.
 
 ![AI Model Server Logo](frontend/public/favicon.svg)
 
 ## Overview
 
-The AI Model Server provides an interface for managing and running inference on custom language models with an API that's compatible with OpenAI's standard. This allows for seamless integration with tools and libraries that already support OpenAI's API format.
+The AI Model Server provides a flexible platform for managing, training, and running inference on custom language models with an API that's compatible with OpenAI's standard. This allows for seamless integration with tools and libraries that already support OpenAI's API format.
 
 Key Features:
 - OpenAI-compatible API endpoints for model inference
-- Support for multiple model types (T5, GPT-2, with more planned)
-- Modern Vue.js-based frontend for model management
+- Support for multiple model types with extensible architecture
+- Model training capabilities with various learning approaches
+- Dataset management for training workflows
+- HuggingFace model integration
+- Modern Vue.js-based frontend with TypeScript
 - API documentation with interactive interface
-- Simple model configuration system
+- Comprehensive model configuration system
+- SafeTensor model file support
 
 ## Prerequisites
 
@@ -39,7 +43,9 @@ Key Features:
 
 3. Install the required Python packages:
    ```bash
-   pip install -r requirements.txt
+   pip install flask flask-cors gunicorn numpy pandas requests scikit-learn scipy werkzeug
+   # Optional: install PyTorch and transformers if you plan to use ML models
+   # pip install torch transformers
    ```
 
 4. Configure your environment variables:
@@ -61,9 +67,9 @@ Key Features:
    npm install
    ```
 
-2. For development, start the Vue dev server:
+2. For development, start the Vue.js dev server:
    ```bash
-   npm run serve
+   npm run dev
    ```
 
 3. For production, build the frontend:
@@ -72,14 +78,39 @@ Key Features:
    ./build_frontend.sh
    ```
 
-### Running the Server
+### Running the Application
 
-1. Start the Flask server:
+#### Development Mode (Two Separate Servers)
+
+1. Start the Flask backend server (port 5000):
    ```bash
    python main.py
    ```
 
-2. Access the application:
+2. In a separate terminal, start the Vue.js dev server (port 3000):
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+3. Access the application:
+   - Frontend interface: http://localhost:3000
+   - Backend API (direct): http://localhost:5000/api/
+   - OpenAI-compatible endpoints: http://localhost:5000/v1/
+
+#### Production Mode (Single Server)
+
+1. Build the frontend:
+   ```bash
+   ./build_frontend.sh
+   ```
+
+2. Start the Flask server:
+   ```bash
+   python main.py
+   ```
+
+3. Access the application:
    - Web interface: http://localhost:5000
    - API documentation: http://localhost:5000/api/openapi
    - Models endpoint: http://localhost:5000/api/models
@@ -92,31 +123,48 @@ Key Features:
 .
 ├── api/                  # API endpoints
 │   ├── openai_compatible.py   # OpenAI-compatible API implementations
-│   └── openapi_spec.py        # OpenAPI specification and documentation
+│   ├── openapi_spec.py        # OpenAPI specification and documentation
+│   └── training.py            # Training API endpoints
 ├── config/               # Configuration files
-│   └── model_config.json      # Model configuration
+│   ├── model_config.json      # Model configuration
+│   └── training_config.json   # Training configuration
 ├── frontend/             # Vue.js frontend
 │   ├── public/               # Static assets
 │   └── src/                  # Source files
 │       ├── components/         # Vue components
+│       │   └── training/         # Training-specific components
 │       ├── router/             # Vue Router configuration
-│       ├── store/              # Pinia state management
+│       ├── store/              # State management
+│       │   ├── models.ts         # Models store
+│       │   └── training.ts       # Training store
 │       ├── views/              # Vue views/pages
 │       ├── App.vue             # Main app component
 │       └── main.ts             # Entry point
 ├── models/               # Model-related code
+│   ├── downloaded/           # Models downloaded from HuggingFace
+│   ├── outputs/              # Model output files
+│   ├── trained/              # Models trained within the system
 │   ├── ai_model.py            # Model registry and interface
 │   └── config.py              # Configuration management
 ├── static/               # Static files
 │   └── vue/                  # Built frontend (after running build_frontend.sh)
 ├── templates/            # HTML templates (for legacy views)
+├── training/             # Training-related code
+│   ├── dataset_handler.py     # Handles different dataset formats
+│   ├── huggingface.py         # HuggingFace API integration
+│   └── trainer.py             # Model training functionality
+├── uploads/              # User-uploaded files
+│   └── datasets/             # Uploaded datasets for training
 ├── utils/                # Utility functions
+│   ├── dependency_checker.py  # Checks and handles dependencies
 │   ├── model_loader.py        # Model loading functionality
 │   └── validation.py          # Request validation
 ├── app.py                # Flask application setup
 ├── build_frontend.sh     # Script to build the frontend
 ├── main.py               # Application entry point
-└── routes.py             # Flask routes and endpoints
+├── routes.py             # Flask routes and endpoints
+├── start_server.sh       # Script to start the server
+└── start_frontend.sh     # Script to start the frontend dev server
 ```
 
 ### Backend Development
@@ -173,6 +221,59 @@ To add support for a new model architecture (beyond T5 and GPT-2):
 3. Add appropriate handling in inference endpoints.
 4. Update the frontend model type selector in `frontend/src/views/ModelConfig.vue`.
 
+## Model Training
+
+The system includes a comprehensive model training module supporting various learning approaches:
+
+### Training Approaches
+
+- **Supervised Learning**: For tasks with labeled data (classification, regression, etc.)
+- **Unsupervised Learning**: For tasks with unlabeled data (clustering, dimensionality reduction, etc.)
+- **Reinforcement Learning**: For training models through rewards and punishments
+- **Semi-Supervised Learning**: For training with both labeled and unlabeled data
+- **Self-Supervised Learning**: For training with artificially created labels
+- **Online Learning**: For incremental learning with streaming data
+- **Federated Learning**: For training across multiple decentralized devices
+
+### Dataset Support
+
+The training module supports various dataset formats:
+
+- **CSV**: For tabular data with headers
+- **JSON**: For structured data
+- **Text**: For plain text datasets
+
+### Training Configuration
+
+Training configuration is managed by the `TrainingConfig` class in `training/config.py`. Each learning approach has default hyperparameter configurations that can be customized.
+
+### HuggingFace Integration
+
+The system integrates with HuggingFace's model hub, allowing you to:
+
+1. Search for pre-trained models
+2. Download models for fine-tuning
+3. Browse available model tasks
+4. Access model information and metadata
+
+### SafeTensor Support
+
+Models trained with the system can be saved in SafeTensor format, providing:
+
+- Better security (no arbitrary code execution)
+- Improved serialization/deserialization performance
+- Compatibility with different frameworks
+- Smaller file sizes
+
+### Training Workflow
+
+1. Select or upload a dataset
+2. Choose a model from HuggingFace or local directory
+3. Select a learning approach and customize training parameters
+4. Start the training process
+5. Monitor training progress
+6. Save and test the trained model
+
 ## Roadmap
 
 ### Phase 1: Core Functionality (Complete)
@@ -189,23 +290,28 @@ To add support for a new model architecture (beyond T5 and GPT-2):
 - ✅ Responsive design for mobile devices
 - ✅ API documentation browser
 
-### Phase 3: Enhanced Model Support (Next)
+### Phase 3: Model Training & Management (Current)
+- ✅ Custom model training interface with multiple learning approaches
+- ✅ Dataset management for training (support for CSV, JSON, text formats)
+- ✅ HuggingFace integration for model discovery and download
+- ✅ Training configuration management
+- ✅ Support for SafeTensor model files
+- ✅ Directory browsing for model path selection
 - 🔲 Support for more model architectures:
   - 🔲 BERT and RoBERTa models
   - 🔲 GPT-J and BLOOM models
   - 🔲 LLaMA and Mistral models
-- 🔲 Custom model training interface
 - 🔲 Model performance metrics
 - 🔲 Batch inference support
-- 🔲 File upload for model artifacts
 
-### Phase 4: Advanced Features
+### Phase 4: Advanced Features (Next)
 - 🔲 User authentication and multi-user support
 - 🔲 Role-based access control
 - 🔲 API key management
 - 🔲 Usage tracking and quotas
 - 🔲 Model versioning
 - 🔲 A/B testing for models
+- 🔲 Automated model evaluation
 
 ### Phase 5: Enterprise Features
 - 🔲 Horizontal scaling and load balancing
@@ -216,12 +322,14 @@ To add support for a new model architecture (beyond T5 and GPT-2):
 - 🔲 Backup and restore functionality
 
 ### Phase 6: Advanced ML Features
-- 🔲 Model fine-tuning API
-- 🔲 Dataset management
-- 🔲 Automated model evaluation
-- 🔲 Hyperparameter optimization
-- 🔲 Model distillation
-- 🔲 Adapter-based fine-tuning
+- 🔲 Advanced training techniques:
+  - 🔲 Hyperparameter optimization
+  - 🔲 Model distillation
+  - 🔲 Adapter-based fine-tuning
+  - 🔲 Quantization support
+- 🔲 Multi-modal model support
+- 🔲 Transfer learning workflows
+- 🔲 Training visualization and analytics
 
 ## API Compatibility
 
