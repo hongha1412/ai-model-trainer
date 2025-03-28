@@ -43,14 +43,10 @@ author = 40729527
 task = "shell.exec"
 args = "cd frontend && npm run serve"
 
-[[workflows.workflow]]
-name = "Fix missing vue tsconfig"
-mode = "sequential"
-author = 40729527
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm install @vue/tsconfig --save-dev"
+[[ports]]
+localPort = 3000
+externalPort = 3000
+exposeLocalhost = true
 
 [[ports]]
 localPort = 5000

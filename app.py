@@ -1,7 +1,12 @@
 import os
 import logging
 from flask import Flask, send_from_directory
-from werkzeug.middleware.proxy_fix import ProxyFix
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    proxy_fix_available = True
+except ImportError:
+    proxy_fix_available = False
+    print("WARNING: ProxyFix middleware not available. Some functionality may be limited.")
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -14,7 +19,10 @@ is_development = os.environ.get('FLASK_ENV') == 'development'
 app = Flask(__name__, 
             static_folder='static', 
             static_url_path='/static')
-app.wsgi_app = ProxyFix(app.wsgi_app)
+            
+if proxy_fix_available:
+    app.wsgi_app = ProxyFix(app.wsgi_app)
+    
 app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
 
 # Register API blueprints
@@ -24,6 +32,27 @@ app.register_blueprint(api_bp, url_prefix='/api/v1')
 # Register OpenAPI documentation blueprint
 from api.openapi_spec import openapi_bp
 app.register_blueprint(openapi_bp, url_prefix='/api/openapi')
+
+# Try to load the training API blueprint
+try:
+    from api.training import training_bp
+    app.register_blueprint(training_bp)
+    logger.info("Training API blueprint registered successfully")
+except ImportError as e:
+    logger.warning(f"Training API could not be registered due to missing dependencies: {str(e)}")
+    logger.warning("Some training-related functionality will be limited. To enable full functionality, install required packages.")
+    # Create a minimal training blueprint that returns helpful error messages
+    from flask import Blueprint, jsonify
+    training_bp = Blueprint("training", __name__)
+    
+    @training_bp.route("/api/training/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
+    def training_missing_dependencies(path):
+        return jsonify({
+            "error": "Training functionality is not available due to missing dependencies.",
+            "message": "Please install required packages (pandas, scikit-learn, transformers) to enable training functionality."
+        }), 503
+        
+    app.register_blueprint(training_bp)
 
 # Import routes after app is created to avoid circular imports
 from routes import *

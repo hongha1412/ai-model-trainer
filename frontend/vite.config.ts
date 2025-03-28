@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import path from 'path'
+import { defineConfig } from "vite";
+import vue from "@vitejs/plugin-vue";
+import path from "path";
 // Use dynamic import for vite-plugin-checker
 // import checker from 'vite-plugin-checker'
 
@@ -13,26 +13,27 @@ export default defineConfig({
     //   typescript: true,
     // }),
   ],
-  root: './',
-  publicDir: 'public',
+  root: "./",
+  publicDir: "public",
   build: {
-    outDir: 'dist'
+    outDir: "dist",
   },
   resolve: {
     alias: {
-      '@': '/src'
-    }
+      "@": "/src",
+    },
   },
   server: {
+    allowedHosts: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
       },
-      '/v1': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      }
-    }
-  }
-})
+      "/v1": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
+  },
+});
