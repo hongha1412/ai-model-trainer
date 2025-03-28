@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Test Model: {{ model.id }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            <i data-feather="arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Model Test</h5>
+            </div>
+            <div class="card-body">
+                <form id="testForm">
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Prompt</label>
+                        <textarea class="form-control" id="prompt" rows="5" placeholder="Enter your prompt here..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="max_tokens" class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" id="max_tokens" value="100" min="1" max="1000">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="temperature" class="form-label">Temperature</label>
+                            <input type="number" class="form-control" id="temperature" value="0.7" min="0" max="2" step="0.1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="top_p" class="form-label">Top P</label>
+                            <input type="number" class="form-control" id="top_p" value="1.0" min="0" max="1" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Mode</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="mode_completion" value="completion" checked>
+                            <label class="form-check-label" for="mode_completion">
+                                Completion
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" id="mode_chat" value="chat">
+                            <label class="form-check-label" for="mode_chat">
+                                Chat
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i data-feather="play"></i> Run Inference
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Model Information</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Model ID
+                        <span class="badge bg-primary rounded-pill">{{ model.id }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Type
+                        <span class="badge bg-primary rounded-pill">{{ model.type }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Status
+                        <span class="badge bg-success rounded-pill">Loaded</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Response</h5>
+            </div>
+            <div class="card-body">
+                <div id="loading" style="display: none;">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                    <p class="text-center mt-2">Running inference...</p>
+                </div>
+                
+                <div id="responseContainer" class="d-none">
+                    <div class="mb-3">
+                        <label class="form-label">Model Output</label>
+                        <div class="p-3 bg-light rounded" id="responseText" style="min-height: 150px; white-space: pre-wrap;"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Raw Response</label>
+                        <pre id="rawResponse" class="p-2 bg-light" style="max-height: 300px; overflow-y: auto;"></pre>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Prompt Tokens</h6>
+                                    <h4 id="promptTokens">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Completion Tokens</h6>
+                                    <h4 id="completionTokens">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title">Total Tokens</h6>
+                                    <h4 id="totalTokens">-</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="errorContainer" class="d-none">
+                    <div class="alert alert-danger" id="errorText"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const testForm = document.getElementById('testForm');
+    const responseContainer = document.getElementById('responseContainer');
+    const errorContainer = document.getElementById('errorContainer');
+    const loading = document.getElementById('loading');
+    
+    testForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Get form values
+        const prompt = document.getElementById('prompt').value;
+        const maxTokens = parseInt(document.getElementById('max_tokens').value);
+        const temperature = parseFloat(document.getElementById('temperature').value);
+        const topP = parseFloat(document.getElementById('top_p').value);
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        
+        if (!prompt) {
+            alert('Please enter a prompt');
+            return;
+        }
+        
+        // Show loading indicator
+        loading.style.display = 'block';
+        responseContainer.classList.add('d-none');
+        errorContainer.classList.add('d-none');
+        
+        // Prepare request data
+        let endpoint, data;
+        
+        if (mode === 'chat') {
+            endpoint = '/api/v1/chat/completions';
+            data = {
+                model: "{{ model.id }}",
+                messages: [
+                    { role: "user", content: prompt }
+                ],
+                max_tokens: maxTokens,
+                temperature: temperature,
+                top_p: topP
+            };
+        } else {
+            endpoint = '/api/v1/completions';
+            data = {
+                model: "{{ model.id }}",
+                prompt: prompt,
+                max_tokens: maxTokens,
+                temperature: temperature,
+                top_p: topP
+            };
+        }
+        
+        // Send API request
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Hide loading indicator
+            loading.style.display = 'none';
+            
+            // Check for errors
+            if (data.error) {
+                errorContainer.classList.remove('d-none');
+                document.getElementById('errorText').textContent = data.error.message || 'An error occurred';
+                return;
+            }
+            
+            // Display response
+            responseContainer.classList.remove('d-none');
+            
+            let outputText;
+            if (mode === 'chat') {
+                outputText = data.choices[0].message.content;
+            } else {
+                outputText = data.choices[0].text;
+            }
+            
+            document.getElementById('responseText').textContent = outputText;
+            document.getElementById('rawResponse').textContent = JSON.stringify(data, null, 2);
+            
+            // Update token counts
+            if (data.usage) {
+                document.getElementById('promptTokens').textContent = data.usage.prompt_tokens || '-';
+                document.getElementById('completionTokens').textContent = data.usage.completion_tokens || '-';
+                document.getElementById('totalTokens').textContent = data.usage.total_tokens || '-';
+            }
+        })
+        .catch(error => {
+            // Hide loading indicator
+            loading.style.display = 'none';
+            
+            // Show error
+            errorContainer.classList.remove('d-none');
+            document.getElementById('errorText').textContent = error.message || 'Network error occurred';
+        });
+    });
+});
+</script>
+{% endblock %}

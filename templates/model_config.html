@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Model Configuration</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-secondary">
+            <i data-feather="arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Add New Model</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('model_config') }}" method="post">
+                    <div class="mb-3">
+                        <label for="model_id" class="form-label">Model ID</label>
+                        <input type="text" class="form-control" id="model_id" name="model_id" required 
+                               placeholder="e.g., t5-small-custom">
+                        <div class="form-text">A unique identifier for this model</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="model_path" class="form-label">Model Path</label>
+                        <input type="text" class="form-control" id="model_path" name="model_path" required
+                               placeholder="e.g., /path/to/model">
+                        <div class="form-text">Absolute path to the model directory</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="model_type" class="form-label">Model Type</label>
+                        <select class="form-select" id="model_type" name="model_type">
+                            <option value="t5" selected>T5</option>
+                            <!-- Add more model types as they become supported -->
+                        </select>
+                        <div class="form-text">Type of model architecture</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Model</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Configured Models</h5>
+            </div>
+            <div class="card-body">
+                {% if config.models %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Path</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for model_id, model in config.models.items() %}
+                            <tr>
+                                <td>{{ model_id }}</td>
+                                <td><small>{{ model.path }}</small></td>
+                                <td>{{ model.type }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No models configured yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Model Setup Guide</h5>
+            </div>
+            <div class="card-body">
+                <h6>T5 Model Setup:</h6>
+                <ol>
+                    <li>Download a T5 model from Hugging Face or use a custom-trained model</li>
+                    <li>Ensure the model directory contains:
+                        <ul>
+                            <li><code>config.json</code></li>
+                            <li><code>pytorch_model.bin</code></li>
+                            <li><code>tokenizer.json</code> and tokenizer files</li>
+                        </ul>
+                    </li>
+                    <li>Add the model using the form on the left</li>
+                    <li>Load the model from the dashboard</li>
+                    <li>Test the model via API or web interface</li>
+                </ol>
+                
+                <div class="alert alert-warning mt-3">
+                    <strong>Note:</strong> Model loading requires sufficient RAM/GPU memory. 
+                    Ensure your system has enough resources for the models you plan to load.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
