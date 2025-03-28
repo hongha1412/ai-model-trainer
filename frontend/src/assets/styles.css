@@ -1,0 +1,137 @@
+:root {
+  --primary-color: #10A37F;
+  --secondary-color: #202123;
+  --background-color: #FFFFFF;
+  --text-color: #353740;
+  --accent-color: #6E6E80;
+  --light-gray: #F7F7F8;
+  --border-color: #E5E5E5;
+  --danger-color: #FF4D4F;
+  --success-color: #52C41A;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+code, pre {
+  font-family: 'Roboto Mono', monospace;
+  background-color: var(--light-gray);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  padding: 1em;
+  overflow-x: auto;
+}
+
+.card {
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: #0D8C6D;
+  border-color: #0D8C6D;
+}
+
+.navbar-dark {
+  background-color: var(--secondary-color) !important;
+}
+
+.navbar-brand {
+  color: var(--primary-color) !important;
+  font-weight: bold;
+}
+
+.model-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.model-card:hover {
+  transform: translateY(-2px);
+}
+
+.model-status {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+
+.model-status.ready {
+  background-color: var(--success-color);
+}
+
+.model-status.not-ready {
+  background-color: var(--danger-color);
+}
+
+.model-status.loading {
+  background-color: var(--accent-color);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.json-response {
+  background-color: var(--light-gray);
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.api-key {
+  font-family: 'Roboto Mono', monospace;
+  background-color: var(--light-gray);
+  padding: 0.5em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-left-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
