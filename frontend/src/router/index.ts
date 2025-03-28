@@ -3,6 +3,7 @@ import Dashboard from '../views/Dashboard.vue'
 import ModelConfig from '../views/ModelConfig.vue'
 import ModelTest from '../views/ModelTest.vue'
 import OpenApi from '../views/OpenApi.vue'
+import ModelTraining from '../views/ModelTraining.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,11 @@ const router = createRouter({
       path: '/openapi',
       name: 'openapi',
       component: OpenApi
+    },
+    {
+      path: '/model-training',
+      name: 'model-training',
+      component: ModelTraining
     }
   ]
 })

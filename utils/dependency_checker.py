@@ -59,6 +59,15 @@ def check_and_install_dependency(dependency_key: str) -> bool:
     required_functions = dependency["functions"]
     is_optional = dependency.get("optional", False)
     
+    # Skip installation attempt for PyTorch and Transformers 
+    # due to disk space constraints on Replit
+    if package_name in ["torch", "transformers"]:
+        logger.info(f"Skipping {package_name} installation check due to disk space constraints.")
+        if is_optional:
+            logger.warning(f"{package_name} is marked as optional. Continuing without it.")
+            return False
+        return False
+    
     try:
         # Try to import the module
         module = importlib.import_module(import_name)
@@ -89,15 +98,7 @@ def check_and_install_dependency(dependency_key: str) -> bool:
         logger.info(f"{package_name} is not installed. Attempting to install...")
         
         try:
-            # For large packages, check if we have enough disk space (rough estimation)
-            if package_name == "torch":
-                logger.warning("PyTorch is a large package (>700MB). Installation may fail due to disk quotas.")
-                logger.warning("For AI model functionality with limited disk space, consider using a hosted API instead.")
-            
-            if package_name == "transformers":
-                logger.warning("Transformers is a large package. Installation may fail due to disk quotas.")
-                logger.warning("For AI model functionality with limited disk space, consider using a hosted API instead.")
-                
+            # Installation for other dependencies
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
             logger.info(f"Successfully installed {package_name}")
             

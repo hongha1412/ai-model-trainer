@@ -8,6 +8,7 @@
       <nav class="app-nav">
         <router-link to="/" class="nav-link">Dashboard</router-link>
         <router-link to="/model-config" class="nav-link">Model Config</router-link>
+        <router-link to="/model-training" class="nav-link">Model Training</router-link>
         <router-link to="/openapi" class="nav-link">API Docs</router-link>
       </nav>
     </header>
