@@ -50,9 +50,16 @@ class T5ModelWrapper:
         logger.info(f"Loading T5 model from {model_path}")
         
         try:
-            # For demo purposes, create dummy tokenizer and model
-            self.tokenizer = DummyTokenizer()
-            self.model = DummyModel()
+            # Check for safetensor format
+            safetensor_path = os.path.join(model_path, "model.safetensors")
+            if os.path.exists(safetensor_path):
+                logger.info("Found safetensor format model")
+                self.tokenizer = DummyTokenizer()  # Replace with actual tokenizer in production
+                self.model = DummyModel()  # Replace with safetensor loading in production
+            else:
+                # Fallback to regular format
+                self.tokenizer = DummyTokenizer()
+                self.model = DummyModel()
             
             logger.info("Note: Using dummy model implementation for demonstration")
             logger.info(f"T5 model simulation ready at {model_path}")
