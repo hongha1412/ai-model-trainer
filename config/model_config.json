@@ -1,14 +1,16 @@
 {
+  "api_version": "v1",
   "models": {
-    "t5-small": {
-      "path": "models/downloaded/t5-small",
-      "type": "t5"
+    "123": {
+      "path": "123",
+      "type": "t5",
+      "loaded": true
     }
   },
-  "default_model": "t5-small",
-  "model_types": [
-    "t5",
-    "transformer",
-    "custom"
-  ]
+  "default_model": null,
+  "server": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": true
+  }
 }

@@ -1,22 +1,12 @@
 {
-  "workflows": [
-    {
+  "runCommands": {
+    "server": {
       "name": "server",
-      "command": "python main.py",
-      "port": 5000,
-      "description": "Run AI server"
+      "command": "cd $REPL_HOME && python main.py"
     },
-    {
+    "frontend": {
       "name": "frontend",
-      "command": "cd frontend && npm run dev -- --host 0.0.0.0 --port 3000",
-      "port": 3000,
-      "description": "Run frontend dev server"
-    },
-    {
-      "name": "all",
-      "command": "./start_all.sh",
-      "port": 5000,
-      "description": "Run both backend and frontend"
+      "command": "cd $REPL_HOME/frontend && npm run dev"
     }
-  ]
+  }
 }

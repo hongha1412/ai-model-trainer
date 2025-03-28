@@ -125,7 +125,7 @@
       <h3 class="card-title">API Example</h3>
       <div class="api-example">
         <h4 class="example-title">cURL Command</h4>
-        <pre class="code-block">curl -X POST http://localhost:5000/v1/completions \
+        <pre class="code-block">curl -X POST http://localhost:5000/api/v1/completions \
   -H "Content-Type: application/json" \
   -d '{
   "model": "{{ id }}",
@@ -139,7 +139,7 @@
         <pre class="code-block">import requests
 
 response = requests.post(
-    "http://localhost:5000/v1/completions",
+    "http://localhost:5000/api/v1/completions",
     json={
         "model": "{{ id }}",
         "prompt": "{{ prompt || 'Enter your prompt here' }}",
@@ -153,7 +153,7 @@ result = response.json()
 print(result["choices"][0]["text"])</pre>
         
         <h4 class="example-title">JavaScript</h4>
-        <pre class="code-block">fetch('http://localhost:5000/v1/completions', {
+        <pre class="code-block">fetch('http://localhost:5000/api/v1/completions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -245,7 +245,7 @@ async function runCompletion() {
   result.value = ''
   
   try {
-    const response = await axios.post('/v1/completions', {
+    const response = await axios.post('/api/v1/completions', {
       model: props.id,
       prompt: prompt.value,
       max_tokens: parseInt(maxTokens.value.toString()),

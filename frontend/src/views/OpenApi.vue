@@ -130,7 +130,7 @@ async function fetchOpenApiSpec() {
   error.value = ''
   
   try {
-    const response = await axios.get('/api/openapi/openapi.json')
+    const response = await axios.get('/openapi.json')
     spec.value = response.data
   } catch (err: any) {
     error.value = err.message || 'Error fetching OpenAPI specification'

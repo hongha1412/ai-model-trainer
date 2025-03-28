@@ -10,8 +10,16 @@ externalPort = 80
 exposeLocalhost = true
 
 [[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 5000
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
 
 [workflows]
 
@@ -23,6 +31,15 @@ author = 40729527
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm run serve"
+
+[[workflows.workflow]]
+name = "Start frontend"
+mode = "sequential"
+author = 40729527
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
