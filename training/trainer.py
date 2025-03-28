@@ -7,43 +7,41 @@ import logging
 from typing import Dict, List, Any, Optional, Union, Tuple
 import time
 
-# Try to import pandas, but provide a fallback
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
-    print("WARNING: pandas is not installed. Some training functionality will be limited.")
+# Import dependency checker
+from utils.dependency_checker import import_optional_dependency
 
-# Try to import torch and transformers, but provide fallbacks
-try:
-    import torch
-    torch_available = True
-except ImportError:
-    torch = None
-    torch_available = False
-    print("WARNING: PyTorch is not installed. Model training functionality will be limited.")
+# Use dependency checker to import and potentially install pandas
+pd = import_optional_dependency("pandas")
 
-try:
-    import transformers
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
-    transformers_available = True
-except ImportError:
-    transformers = None
-    AutoModelForSequenceClassification = None
-    AutoTokenizer = None
-    TrainingArguments = None
-    Trainer = None
-    transformers_available = False
-    print("WARNING: Transformers is not installed. Model training functionality will be limited.")
+# Use dependency checker to import and potentially install torch
+torch = import_optional_dependency("torch")
+torch_available = torch is not None
 
-# Try to import sklearn, but provide a fallback
-try:
-    from sklearn.model_selection import train_test_split
-    sklearn_available = True
-except ImportError:
-    train_test_split = None
-    sklearn_available = False
-    print("WARNING: scikit-learn is not installed. Train-test split functionality will be limited.")
+# Use dependency checker to import and potentially install transformers
+transformers = import_optional_dependency("transformers")
+transformers_available = transformers is not None
+
+AutoModelForSequenceClassification = None
+AutoTokenizer = None
+TrainingArguments = None
+Trainer = None
+
+if transformers_available:
+    try:
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer, TrainingArguments, Trainer
+    except ImportError:
+        logging.warning("Could not import specific transformers classes")
+
+# Use dependency checker to import and potentially install sklearn
+sklearn = import_optional_dependency("sklearn")
+sklearn_available = sklearn is not None
+train_test_split = None
+
+if sklearn_available:
+    try:
+        from sklearn.model_selection import train_test_split
+    except ImportError:
+        logging.warning("Could not import train_test_split from scikit-learn")
 
 from training.dataset_handler import DatasetHandler
 from training.config import TrainingConfig

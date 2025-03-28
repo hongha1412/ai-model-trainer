@@ -7,19 +7,22 @@ import csv
 from typing import Dict, List, Any, Optional, Union, Tuple
 import logging
 
-# Try to import pandas, but provide a fallback
-try:
-    import pandas as pd
-except ImportError:
-    pd = None
+# Import dependency checker
+from utils.dependency_checker import import_optional_dependency
+
+# Use dependency checker to import and potentially install pandas
+pd = import_optional_dependency("pandas")
+if pd is None:
     print("WARNING: pandas is not installed. Some dataset functionality will be limited.")
 
-# Try to import sklearn, but provide a fallback
-try:
-    from sklearn.model_selection import train_test_split
-except ImportError:
-    train_test_split = None
-    print("WARNING: scikit-learn is not installed. Train-test split functionality will be limited.")
+# Use dependency checker to import and potentially install sklearn
+sklearn = import_optional_dependency("sklearn")
+train_test_split = None
+if sklearn is not None:
+    try:
+        from sklearn.model_selection import train_test_split
+    except ImportError:
+        print("WARNING: scikit-learn model_selection module not found. Train-test split functionality will be limited.")
 
 logger = logging.getLogger(__name__)
 

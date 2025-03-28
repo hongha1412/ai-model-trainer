@@ -1,5 +1,6 @@
 {
-  "supervised": {
+  "learning_type": "supervised",
+  "config": {
     "batch_size": 8,
     "learning_rate": 2e-5,
     "num_train_epochs": 3,

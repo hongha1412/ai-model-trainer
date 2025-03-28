@@ -8,14 +8,12 @@ from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
 from typing import Dict, List, Any, Optional, Union
 
-# Try to import pandas, but provide a fallback
-try:
-    import pandas as pd
-    pandas_available = True
-except ImportError:
-    pd = None
-    pandas_available = False
-    print("WARNING: pandas is not installed. Some dataset functionality will be limited.")
+# Import dependency checker
+from utils.dependency_checker import import_optional_dependency
+
+# Use dependency checker to import and potentially install pandas
+pd = import_optional_dependency("pandas")
+pandas_available = pd is not None
 
 from training.dataset_handler import DatasetHandler
 from training.config import TrainingConfig

@@ -7,16 +7,22 @@ from typing import Dict, List, Any, Optional, Union
 import json
 import requests
 
-# Try to import transformers, but provide a fallback
-try:
-    from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
-    transformers_available = True
-except ImportError:
-    AutoTokenizer = None
-    AutoModel = None
-    AutoModelForSequenceClassification = None
-    transformers_available = False
-    print("WARNING: Transformers is not installed. HuggingFace model functionality will be limited.")
+# Import dependency checker
+from utils.dependency_checker import import_optional_dependency
+
+# Use dependency checker to import and potentially install transformers
+transformers = import_optional_dependency("transformers")
+transformers_available = transformers is not None
+
+AutoTokenizer = None
+AutoModel = None 
+AutoModelForSequenceClassification = None
+
+if transformers_available:
+    try:
+        from transformers import AutoTokenizer, AutoModel, AutoModelForSequenceClassification
+    except ImportError:
+        logging.warning("Could not import specific transformers classes")
 
 logger = logging.getLogger(__name__)
 
