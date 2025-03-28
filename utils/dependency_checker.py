@@ -5,9 +5,13 @@ import importlib
 import logging
 import subprocess
 import sys
+import os
 from typing import List, Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
+
+# Environment variable to disable automatic installation
+DISABLE_AUTO_INSTALL = os.environ.get("DISABLE_AUTO_INSTALL", "").lower() in ("1", "true", "yes")
 
 DEPENDENCIES = {
     "pandas": {
@@ -23,12 +27,14 @@ DEPENDENCIES = {
     "torch": {
         "import_name": "torch",
         "package_name": "torch",
-        "functions": []
+        "functions": [],
+        "optional": True  # Mark torch as optional due to size
     },
     "transformers": {
         "import_name": "transformers",
         "package_name": "transformers",
-        "functions": ["AutoTokenizer", "AutoModelForSeq2SeqLM", "TrainingArguments", "Trainer"]
+        "functions": ["AutoTokenizer", "AutoModelForSeq2SeqLM", "TrainingArguments", "Trainer"],
+        "optional": True  # Mark transformers as optional due to size
     }
 }
 
@@ -51,6 +57,7 @@ def check_and_install_dependency(dependency_key: str) -> bool:
     import_name = dependency["import_name"]
     package_name = dependency["package_name"]
     required_functions = dependency["functions"]
+    is_optional = dependency.get("optional", False)
     
     try:
         # Try to import the module
@@ -75,9 +82,22 @@ def check_and_install_dependency(dependency_key: str) -> bool:
         return True
                 
     except (ImportError, ModuleNotFoundError):
+        if DISABLE_AUTO_INSTALL:
+            logger.info(f"{package_name} is not installed and auto-install is disabled.")
+            return False
+            
         logger.info(f"{package_name} is not installed. Attempting to install...")
         
         try:
+            # For large packages, check if we have enough disk space (rough estimation)
+            if package_name == "torch":
+                logger.warning("PyTorch is a large package (>700MB). Installation may fail due to disk quotas.")
+                logger.warning("For AI model functionality with limited disk space, consider using a hosted API instead.")
+            
+            if package_name == "transformers":
+                logger.warning("Transformers is a large package. Installation may fail due to disk quotas.")
+                logger.warning("For AI model functionality with limited disk space, consider using a hosted API instead.")
+                
             subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
             logger.info(f"Successfully installed {package_name}")
             
@@ -99,6 +119,17 @@ def check_and_install_dependency(dependency_key: str) -> bool:
                 
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to install {package_name}: {str(e)}")
+            if is_optional:
+                logger.warning(f"{package_name} is marked as optional. Continuing without it.")
+            return False
+        except OSError as e:
+            if "Disk quota exceeded" in str(e):
+                logger.error(f"Failed to install {package_name} due to disk quota exceeded.")
+                if is_optional:
+                    logger.warning(f"{package_name} is marked as optional. Continuing without it.")
+                logger.info("To disable automatic installation, set DISABLE_AUTO_INSTALL=1")
+            else:
+                logger.error(f"OS error installing {package_name}: {str(e)}")
             return False
         except Exception as e:
             logger.error(f"Unexpected error installing {package_name}: {str(e)}")

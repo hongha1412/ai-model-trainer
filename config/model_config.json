@@ -1,3 +1,9 @@
 {
-  "models": {}
+  "models": {},
+  "settings": {
+    "default_model": "",
+    "max_concurrent_models": 3,
+    "max_tokens_per_request": 2048,
+    "enable_compatibility_api": true
+  }
 }

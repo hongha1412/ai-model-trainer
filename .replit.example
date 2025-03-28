@@ -1,0 +1,15 @@
+run = "python main.py"
+modules = ["python-3.11:v14-20240320-60f99a1"] 
+
+[env]
+DISABLE_AUTO_INSTALL = "1"
+
+[nix]
+channel = "stable-23_11"
+
+[unitTest]
+language = "python3"
+
+[deployment]
+run = ["sh", "-c", "gunicorn --bind 0.0.0.0:5050 main:app"]
+deploymentTarget = "cloudrun"
