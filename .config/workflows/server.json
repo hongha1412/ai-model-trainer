@@ -1,0 +1,5 @@
+{
+  "env": {},
+  "command": "python main.py",
+  "workdir": "."
+}

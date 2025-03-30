@@ -1,0 +1,4 @@
+[workflow]
+onBoot = true
+name = "server"
+run = "python main.py"

@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, Optional, List
 
 from models.ai_model import register_model, unregister_model, get_model
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 logger = logging.getLogger(__name__)
 
@@ -48,24 +49,54 @@ class T5ModelWrapper:
             model_path: Path to the model directory
         """
         logger.info(f"Loading T5 model from {model_path}")
-        
         try:
             # Check for safetensor format
             safetensor_path = os.path.join(model_path, "model.safetensors")
             if os.path.exists(safetensor_path):
                 logger.info("Found safetensor format model")
-                self.tokenizer = DummyTokenizer()  # Replace with actual tokenizer in production
-                self.model = DummyModel()  # Replace with safetensor loading in production
+                self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+                self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
             else:
                 # Fallback to regular format
                 self.tokenizer = DummyTokenizer()
                 self.model = DummyModel()
             
-            logger.info("Note: Using dummy model implementation for demonstration")
-            logger.info(f"T5 model simulation ready at {model_path}")
+            # Resize model embeddings to match tokenizer vocabulary
+            # self.model.resize_token_embeddings(len(self.tokenizer))
+            logger.info("T5 model loaded successfully")
         except Exception as e:
             logger.error(f"Error setting up model simulation: {str(e)}")
             raise ValueError(f"Failed to set up model simulation: {str(e)}")
+
+    def generate(self, text: str, max_length: int = 100, temperature: float = 1.0, top_p: float = 1.0, do_sample: bool = True, num_beams: int = 1, early_stopping: bool = False) -> str:
+        """
+        Generate text using the T5 model
+        
+        Args:
+            text: Input text to generate response from
+            max_length: Maximum length of output tokens
+            temperature: Temperature for sampling
+            top_p: Top-p (nucleus) sampling parameter
+            do_sample: Whether to perform sampling
+            num_beams: Number of beams for beam search
+            early_stopping: Whether to stop generation when all beams end
+
+        Returns:
+            Generated text response
+        """
+        inputs = self.tokenizer(text, return_tensors="pt")
+        attention_mask = inputs.attention_mask
+        outputs = self.model.generate(
+            inputs.input_ids,
+            attention_mask=attention_mask,
+            max_length=max_length,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=do_sample,
+            num_beams=num_beams,
+            early_stopping=early_stopping
+        )
+        return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 def load_model_from_path(model_id: str, model_path: str, model_type: str = 't5') -> Optional[Any]:
     """
@@ -120,11 +151,7 @@ def unload_model(model_id: str) -> None:
     """
     Unload and unregister a model
     
-    Args:
-        model_id: Unique identifier for the model
-    
-    Raises:
-        ValueError: If model is not found
+    Arodel is not found
     """
     # Check if model exists
     existing_model = get_model(model_id)

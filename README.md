@@ -43,7 +43,7 @@ Key Features:
 
 3. Install the required Python packages:
    ```bash
-   pip install flask flask-cors gunicorn numpy pandas requests scikit-learn scipy werkzeug
+   pip install flask flask-cors gunicorn numpy pandas requests scikit-learn scipy werkzeug sentencepiece
    # Optional: install PyTorch and transformers if you plan to use ML models
    # pip install torch transformers
    ```

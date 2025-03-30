@@ -1,0 +1,4 @@
+[workflow]
+onBoot = true
+name = "frontend"
+run = "cd frontend && npm run dev"

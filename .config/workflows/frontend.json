@@ -1,0 +1,5 @@
+{
+  "env": {},
+  "command": "cd frontend && npm run dev",
+  "workdir": "."
+}

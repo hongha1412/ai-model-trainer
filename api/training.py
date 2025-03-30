@@ -210,7 +210,7 @@ def download_huggingface_model():
             "error": str(e)
         }), 500
 
-@training_bp.route("/api/training/upload-dataset", methods=["POST"])
+@training_bp.route("/api/training/datasets/upload", methods=["POST"])
 def upload_dataset():
     """
     Upload a dataset file
@@ -475,7 +475,7 @@ def train_model():
         
         # Load model configuration
         model_config = ModelConfig.get_config()
-        if "models" not in model_config or model_id not in model_config["models"]:
+        if "models" not in model_config:# or model_id not in model_config["models"]:
             return jsonify({
                 "error": f"Model {model_id} not found in configuration"
             }), 404

@@ -321,7 +321,7 @@ export const useTrainingStore = defineStore('training', {
       model_source: 'huggingface' | 'local',
       model_id?: string,
       model_path?: string,
-      dataset_name: string,
+      dataset_filename: string,
       input_field: string,
       output_field?: string,
       learning_type: string,

@@ -44,9 +44,11 @@ class DatasetHandler:
             dataset_content: Raw content of the dataset
         """
         self.dataset_path = dataset_path
-        self.dataset_format = dataset_format
         self.dataset_content = dataset_content
         self.processed_data = None
+        self.dataset_format = dataset_format
+        if self.dataset_format in ['txt', 'text']:
+            self.dataset_format = 'text'
         
         # Auto-detect format if not specified
         if dataset_path and not dataset_format:
@@ -96,7 +98,7 @@ class DatasetHandler:
                 return False
             
             if self.dataset_format == 'json':
-                with open(self.dataset_path, 'r') as f:
+                with open(self.dataset_path, 'r', encoding='utf-8') as f:
                     self.dataset_content = json.load(f)
             elif self.dataset_format == 'csv':
                 if pd is None:
@@ -104,7 +106,7 @@ class DatasetHandler:
                     return False
                 self.dataset_content = pd.read_csv(self.dataset_path)
             elif self.dataset_format == 'text':
-                with open(self.dataset_path, 'r') as f:
+                with open(self.dataset_path, 'r', encoding='utf-8') as f:
                     self.dataset_content = f.read()
             else:
                 logger.error(f"Unsupported dataset format: {self.dataset_format}")

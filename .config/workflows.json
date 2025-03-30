@@ -1,0 +1,14 @@
+{
+  "workflows": [
+    {
+      "name": "server",
+      "path": ".config/workflows/server.toml",
+      "id": "server"
+    },
+    {
+      "name": "frontend",
+      "path": ".config/workflows/frontend.toml",
+      "id": "frontend"
+    }
+  ]
+}

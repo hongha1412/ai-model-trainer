@@ -112,7 +112,7 @@ def create_completion():
                     "code": "model_not_found"
                 }
             }), 404
-        
+
         # Check if model is loaded
         model = get_model(model_id)
         if not model:
@@ -123,7 +123,7 @@ def create_completion():
                     "code": "model_not_loaded"
                 }
             }), 400
-        
+
         # Run inference
         result = run_inference(
             model_id=model_id,
@@ -133,6 +133,7 @@ def create_completion():
             top_p=top_p
         )
         
+        logger.info(f"Result: {result}")
         # Add OpenAI compatible fields
         result.update({
             "object": "text_completion",

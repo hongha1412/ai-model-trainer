@@ -1,0 +1,7 @@
+[commands]
+start = ["bash", "./start_server.sh"]
+
+[start]
+startCommand = ["bash", "./start_server.sh"]
+targetPort = 5000
+onBoot = false

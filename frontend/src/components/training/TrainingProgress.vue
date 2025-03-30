@@ -216,7 +216,7 @@ export default defineComponent({
       // Prepare training parameters
       const trainingParams = {
         model_source: props.model.source,
-        dataset_name: props.dataset.name,
+        dataset_filename: props.dataset.filename,
         input_field: props.config.input_field || 'input',
         output_field: props.config.output_field,
         learning_type: props.config.learning_type,
